@@ -2,11 +2,12 @@ import pygame ,math, time
 from pygame.locals import *
 pygame.init()
 
-width = 800
-height = 800
+width = 700
+height = 700
 
 def createWindow(width, height):
 	screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+	pygame.display.set_caption('A* Pathfinding Visualization')
 	return screen
 
 class Cell(object):
