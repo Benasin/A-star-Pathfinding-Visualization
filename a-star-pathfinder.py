@@ -2,8 +2,12 @@ import pygame ,math, time
 from pygame.locals import *
 pygame.init()
 
-col = 40
-row = 40
+width = 800
+height = 800
+
+def createWindow(width, height):
+	screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+	return screen
 
 class Cell(object):
 	def __init__(self, i, j):
@@ -14,7 +18,7 @@ class Cell(object):
 		self.g = 0
 		self.neighbors = []
 		self.previous  = None
-	def addNeighbors(self,grid, obstacle): #Check neighbor for every conditions
+	def addNeighbors(self,grid, obstacle ,col ,row): #Check neighbor for every conditions
 		if self.i < (col - 1):
 			self.neighbors.append(grid[self.i + 1][self.j])
 		if self.i > 0:
@@ -36,23 +40,9 @@ class Cell(object):
 		if self.i < (col - 1) and self.j < (row - 1) and grid[self.i + 1][self.j] not in obstacle and grid[self.i][self.j + 1] not in obstacle:
 			self.neighbors.append(grid[self.i + 1][self.j + 1])
 
-	def show(self):
-		pygame.draw.rect(screen, (255,255,255), (self.i * 20, self.j * 20, 20, 20))
-		pygame.draw.rect(screen, (0,0,0), (self.i * 20, self.j * 20, 20, 20), 1)
-	def obstacle(self):
-		pygame.draw.rect(screen, (0,0,0), (self.i * 20, self.j * 20, 20, 20))
-	def start(self):
-		pygame.draw.rect(screen, (0,255,0), (self.i * 20, self.j * 20, 20, 20))
-		pygame.draw.rect(screen, (0,0,0), (self.i * 20, self.j * 20, 20, 20), 1)
-	def end(self):
-		pygame.draw.rect(screen, (255,0,0), (self.i * 20, self.j * 20, 20, 20))
-		pygame.draw.rect(screen, (0,0,0), (self.i * 20, self.j * 20, 20, 20), 1)
-	def color(self, color):
+	def color(self , color, screen):
 		pygame.draw.rect(screen, (color), (self.i * 20, self.j * 20, 20, 20))
 		pygame.draw.rect(screen, (0,0,0), (self.i * 20, self.j * 20, 20, 20), 1)
-
-screen = pygame.display.set_mode((800, 800))
-screen.fill((255,255,255))
 
 #Calculate the heuristic
 def heuristic(a,b):
@@ -60,17 +50,23 @@ def heuristic(a,b):
 	return distance
 
 def main():
+	global width
+	global height
+	screen = createWindow(width,height)
+	col = width // 20 + 1
+	row = height // 20 + 1
 	grid = []
+	print(grid)
 	#Create a 2D Array
-	for i in range(row):
+	for i in range(col):
 		container = []
-		for j in range(col):
+		for j in range(row):
 			container.append(Cell(i,j))
 		grid.append(container)
-	#Show everything
-	for i in range(row):
-		for j in range(col):
-			grid[i][j].show()
+	#color everything
+	for i in range(col):
+		for j in range(row):
+			grid[i][j].color((255,255,255),screen)
 	openSet = []
 	closedSet = []
 	end = []
@@ -83,20 +79,24 @@ def main():
 
 	while True:
 		for event in pygame.event.get():
+			if event.type == pygame.VIDEORESIZE:
+				width , height = event.size
+				main()
+
 			if event.type == QUIT:
 				pygame.quit()
 			x, y = pygame.mouse.get_pos()
-			x_index = round(x / 20 + 0.5) - 1
-			y_index = round(y / 20 + 0.5) - 1
+			x_index = round(abs(x) / 20 + 0.5) - 1
+			y_index = round(abs(y) / 20 + 0.5) - 1
 			if event.type == pygame.MOUSEBUTTONDOWN: 
 				if event.button == 3: #Erase obstacle on right click
 					if grid[x_index][y_index] in obstacle:
 						obstacle.remove(grid[x_index][y_index])
-						grid[x_index][y_index].show()
+						grid[x_index][y_index].color((255,255,255), screen)
 						dragging_erase = True
 				elif event.button == 1: #Add obstacle on left click
 					if grid[x_index][y_index] not in obstacle:
-						grid[x_index][y_index].obstacle()
+						grid[x_index][y_index].color((0,0,0), screen)
 						obstacle.append(grid[x_index][y_index])
 						dragging_draw = True
 			elif event.type == pygame.MOUSEBUTTONUP:
@@ -106,19 +106,19 @@ def main():
 					dragging_erase = False
 			elif event.type == pygame.MOUSEMOTION: #Add dragging effect
 				if dragging_draw and grid[x_index][y_index] not in obstacle:
-					grid[x_index][y_index].obstacle()
+					grid[x_index][y_index].color((0,0,0), screen)
 					obstacle.append(grid[x_index][y_index])
 				elif dragging_erase and  grid[x_index][y_index] in obstacle:
 					obstacle.remove(grid[x_index][y_index])
-					grid[x_index][y_index].show()
+					grid[x_index][y_index].color((255,255,255),screen)
 
 			elif event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_s: #Place start when press s
-					grid[x_index][y_index].start()
+					grid[x_index][y_index].color((0,0,255),screen)
 					start.append(grid[x_index][y_index])
 					openSet.append(grid[x_index][y_index])
 				elif event.key == pygame.K_e: #Place end when press e
-					grid[x_index][y_index].end()
+					grid[x_index][y_index].color((255,0,0), screen)
 					end.append(grid[x_index][y_index])
 				elif event.key == pygame.K_r: #Reset when press r
 					main()
@@ -132,9 +132,9 @@ def main():
 			openSet.remove(current) # remove current cell from openSet
 			closedSet.append(current)
 
-			for i in range(row):
-				for j in range(col):
-					grid[i][j].addNeighbors(grid, obstacle) # add neighbors to all cells
+			for i in range(col):
+				for j in range(row):
+					grid[i][j].addNeighbors(grid, obstacle, col,row) # add neighbors to all cells
 
 			neighbors = current.neighbors 
 			for neighbor in neighbors:
@@ -165,15 +165,15 @@ def main():
 
 		#color everything
 		for cell in openSet:
-			cell.color((0,255,0))
+			cell.color((0,255,0),screen)
 		for cell in closedSet:
-			cell.color((231,84,128))
+			cell.color((231,84,128),screen)
 		for cell in path:
-			cell.color((135,206,250))
+			cell.color((135,206,250),screen)
 		for cell in start:
-			cell.color((0,0,255))
+			cell.color((0,0,255),screen)
 		for cell in end:
-			cell.color((255,0,0))
+			cell.color((255,0,0),screen)
 
 		pygame.display.update()
 if __name__ == '__main__':
