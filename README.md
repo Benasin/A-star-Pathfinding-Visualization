@@ -1,5 +1,4 @@
 # A-star-Pathfinding-Visualization
-A* Pathfinding Visualization
 For this to work you must have pygame and python3 installed.<br />
 
 "Left-click + s" for start node.<br />
